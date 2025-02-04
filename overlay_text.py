@@ -33,6 +33,7 @@ class OverlayText:
                 "position_y": ("INT", {"default": 0, "min": -4096, "max": 4096}),
                 "rotation_angle": ("FLOAT", {"default": 0.0, "min": -360.0, "max": 360.0, "step": 0.1}),
                 "rotation_options": (ROTATE_OPTIONS,),
+                "letter_spacing": ("FLOAT", {"default": 0.0, "min": -100.0, "max": 100.0}),
                 },
                 "optional": {"font_color_hex": ("STRING", {"multiline": False, "default": "#000000"})
                 }
@@ -48,6 +49,7 @@ class OverlayText:
                      position_x, position_y,
                      align, justify,
                      rotation_angle, rotation_options,
+                     letter_spacing,
                      font_color_hex='#000000'):
 
         # Get RGB values for the text color
@@ -66,7 +68,8 @@ class OverlayText:
                                              margins, line_spacing,
                                              position_x, position_y,
                                              align, justify,
-                                             rotation_angle, rotation_options)
+                                             rotation_angle, rotation_options,
+                                             letter_spacing)
 
         # Composite the text image onto the background image using the rotated text mask
         image_out = Image.composite(text_image, back_image, rotated_text_mask)

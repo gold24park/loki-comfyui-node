@@ -102,7 +102,7 @@ def draw_masked_text(text_mask, text,
                      position_x, position_y, 
                      align, justify,
                      rotation_angle, rotation_options,
-                     letter_spacing=-25):
+                     letter_spacing=0):
     
     # Create the drawing context
     draw = ImageDraw.Draw(text_mask)
