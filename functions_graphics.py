@@ -41,15 +41,6 @@ def justify_text(justify, img_width, line_width, margins):
         text_plot_x = img_width/2 - line_width/2
     return text_plot_x   
 
-
-# def get_text_size(draw, text, font):
-#     bbox = draw.textbbox((0, 0), text, font=font)
-
-#     # Calculate the text width and height
-#     text_width = bbox[2] - bbox[0]
-#     text_height = bbox[3] - bbox[1]
-#     return text_width, text_height
-
 def get_text_size(draw, text, font):
     """
     기존에 사용하던 '문장' 단위의 bbox를 구하는 함수.
