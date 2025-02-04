@@ -50,49 +50,70 @@ def justify_text(justify, img_width, line_width, margins):
 #     text_height = bbox[3] - bbox[1]
 #     return text_width, text_height
 
-def get_text_size(draw, text, font, letter_spacing=-25):
+def get_text_size(draw, text, font):
     """
-    텍스트의 전체 크기를 계산하는 함수 (자간 포함)
+    기존에 사용하던 '문장' 단위의 bbox를 구하는 함수.
     """
-    if letter_spacing == 0:
-        bbox = draw.textbbox((0, 0), text, font=font)
-        return bbox[2] - bbox[0], bbox[3] - bbox[1]
-    
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+    return text_width, text_height
+
+def get_text_size_with_spacing(draw, text, font, letter_spacing):
+    """
+    text(한 줄)에 대해, 각 글자를 하나씩 그려본다고 가정했을 때의 전체 폭과 높이 계산.
+    """
+    if not text:
+        return 0, 0  # 빈 문자열 대비
+
     total_width = 0
     max_height = 0
-    
-    # 각 문자별 크기 계산
-    for char in text:
-        char_bbox = draw.textbbox((0, 0), char, font=font)
-        char_width = char_bbox[2] - char_bbox[0]
-        char_height = char_bbox[3] - char_bbox[1]
-        total_width += char_width + letter_spacing
+
+    for i, char in enumerate(text):
+        char_width, char_height = get_text_size(draw, char, font)
+        total_width += char_width
+        # 글자 사이 간격을 추가
+        if i < len(text) - 1:
+            total_width += letter_spacing
+        # 가장 큰 높이를 사용
         max_height = max(max_height, char_height)
-    
-    # 마지막 문자 뒤의 추가 자간은 제외
-    if text:
-        total_width -= letter_spacing
-        
+
     return total_width, max_height
 
+def draw_characters_with_spacing(draw, x, y, text, font,
+                                 fill, stroke_width, stroke_fill,
+                                 letter_spacing):
+    """
+    한 줄(line)을 구성하는 text를 각 글자를 순회하며 draw.text로 찍어서 글자 간격을 표현.
+    """
+    current_x = x
+    for i, char in enumerate(text):
+        draw.text((current_x, y), char, fill=fill,
+                  font=font,
+                  stroke_width=stroke_width,
+                  stroke_fill=stroke_fill)
+        # 각 문자 폭 구하기
+        char_width, _ = get_text_size(draw, char, font)
+        current_x += char_width + letter_spacing
 
 def draw_masked_text(text_mask, text,
                      font_name, font_size,
                      margins, line_spacing,
                      position_x, position_y, 
                      align, justify,
-                     rotation_angle, rotation_options):
+                     rotation_angle, rotation_options,
+                     letter_spacing=-25):
     
-    # Create the drawing context        
+    # Create the drawing context
     draw = ImageDraw.Draw(text_mask)
 
     # Define font settings
     font_folder = "fonts"
     font_file = os.path.join(font_folder, font_name)
     resolved_font_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), font_file)
-    font = ImageFont.truetype(str(resolved_font_path), size=font_size) 
+    font = ImageFont.truetype(str(resolved_font_path), size=font_size)
 
-     # Split the input text into lines
+    # Split the input text into lines
     text_lines = text.split('\n')
 
     # Calculate the size of the text plus padding for the tallest line
@@ -100,13 +121,11 @@ def draw_masked_text(text_mask, text,
     max_text_height = 0
 
     for line in text_lines:
-        # Calculate the width and height of the current line
-        line_width, line_height = get_text_size(draw, line, font)
- 
+        line_width, line_height = get_text_size_with_spacing(draw, line, font, letter_spacing)
         line_height = line_height + line_spacing
         max_text_width = max(max_text_width, line_width)
         max_text_height = max(max_text_height, line_height)
-    
+
     # Get the image width and height
     image_width, image_height = text_mask.size
     image_center_x = image_width / 2
@@ -117,29 +136,32 @@ def draw_masked_text(text_mask, text,
     text_height = max_text_height * len(text_lines)
 
     for line in text_lines:
-        # Calculate the width of the current line
-        line_width, _ = get_text_size(draw, line, font)
-                            
-        # Get the text x and y positions for each line                                     
+        line_width, _ = get_text_size_with_spacing(draw, line, font, letter_spacing)
         text_plot_x = position_x + justify_text(justify, image_width, line_width, margins)
         text_plot_y = align_text(align, image_height, text_height, text_pos_y, margins)
-        
-        # Add the current line to the text mask
-        draw.text((text_plot_x, text_plot_y), line, fill=255, font=font)
-        
-        text_pos_y += max_text_height  # Move down for the next line
-        sum_text_plot_y += text_plot_y     # Sum the y positions
+
+        # 각 문자를 순회하며 그려서 letter_spacing 적용
+        draw_characters_with_spacing(draw,
+                                     text_plot_x, text_plot_y,
+                                     line, font,
+                                     fill=255,
+                                     stroke_width=0,
+                                     stroke_fill=None,
+                                     letter_spacing=letter_spacing)
+
+        text_pos_y += max_text_height
+        sum_text_plot_y += text_plot_y
 
     # Calculate centers for rotation
     text_center_x = text_plot_x + max_text_width / 2
-    text_center_y = sum_text_plot_y / len(text_lines)
+    text_center_y = sum_text_plot_y / len(text_lines) if text_lines else 0
 
     if rotation_options == "text center":
         rotated_text_mask = text_mask.rotate(rotation_angle, center=(text_center_x, text_center_y))
-    elif rotation_options == "image center":    
+    elif rotation_options == "image center":
         rotated_text_mask = text_mask.rotate(rotation_angle, center=(image_center_x, image_center_y))
-        
-    return rotated_text_mask        
+
+    return rotated_text_mask       
 
 def draw_text_on_image(draw, y_position, bar_width, bar_height, text, font, text_color, font_outline):
 
@@ -240,7 +262,8 @@ def text_panel(image_width, image_height, text,
               margins, line_spacing,
               position_x, position_y,
               align, justify,
-              rotation_angle, rotation_options):
+              rotation_angle, rotation_options,
+                letter_spacing=0):
 
     """
     Create an image with text overlaid on a background.
@@ -261,7 +284,8 @@ def text_panel(image_width, image_height, text,
                           margins, line_spacing,
                           position_x, position_y,
                           align, justify,
-                          rotation_angle, rotation_options)
+                          rotation_angle, rotation_options,
+                          letter_spacing)
   
     return image_out     
 
@@ -273,33 +297,27 @@ def draw_text(panel, text,
               margins, line_spacing,
               position_x, position_y, 
               align, justify,
-              rotation_angle, rotation_options):
+              rotation_angle, rotation_options,
+              letter_spacing=0):
     
-    # Create the drawing context        
     draw = ImageDraw.Draw(panel)
 
-    # Define font settings
     font_folder = "fonts"
     font_file = os.path.join(font_folder, font_name)
     resolved_font_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), font_file)
-    font = ImageFont.truetype(str(resolved_font_path), size=font_size) 
+    font = ImageFont.truetype(str(resolved_font_path), size=font_size)
 
-     # Split the input text into lines
     text_lines = text.split('\n')
 
-    # Calculate the size of the text plus padding for the tallest line
     max_text_width = 0
     max_text_height = 0
 
     for line in text_lines:
-        # Calculate the width and height of the current line
-        line_width, line_height = get_text_size(draw, line, font)      
-        
+        line_width, line_height = get_text_size_with_spacing(draw, line, font, letter_spacing)
         line_height = line_height + line_spacing
         max_text_width = max(max_text_width, line_width)
         max_text_height = max(max_text_height, line_height)
-    
-    # Get the image center
+
     image_center_x = panel.width / 2
     image_center_y = panel.height / 2
 
@@ -308,27 +326,37 @@ def draw_text(panel, text,
     text_height = max_text_height * len(text_lines)
 
     for line in text_lines:
-        # Calculate the width and height of the current line
-        line_width, line_height = get_text_size(draw, line, font)            
-                            
-        # Get the text x and y positions for each line                                     
+        line_width, line_height = get_text_size_with_spacing(draw, line, font, letter_spacing)
         text_plot_x = position_x + justify_text(justify, panel.width, line_width, margins)
         text_plot_y = align_text(align, panel.height, text_height, text_pos_y, margins)
-        
-        # Add the current line to the text mask
-        draw.text((text_plot_x, text_plot_y), line, fill=font_color, font=font, stroke_width=font_outline_thickness, stroke_fill=font_outline_color)
 
-        text_pos_y += max_text_height  # Move down for the next line
-        sum_text_plot_y += text_plot_y     # Sum the y positions
+        # 글자를 순회하며 그리기
+        draw_characters_with_spacing(draw,
+                                     text_plot_x, text_plot_y,
+                                     line, font,
+                                     fill=font_color,
+                                     stroke_width=font_outline_thickness,
+                                     stroke_fill=font_outline_color,
+                                     letter_spacing=letter_spacing)
+
+        text_pos_y += max_text_height
+        sum_text_plot_y += text_plot_y
 
     text_center_x = text_plot_x + max_text_width / 2
-    text_center_y = sum_text_plot_y / len(text_lines)
+    # 라인 수가 0이면 나눗셈 예외 처리
+    text_center_y = sum_text_plot_y / len(text_lines) if text_lines else 0
 
     if rotation_options == "text center":
-        rotated_panel = panel.rotate(rotation_angle, center=(text_center_x, text_center_y), resample=Image.BILINEAR)
-    elif rotation_options == "image center":    
-        rotated_panel = panel.rotate(rotation_angle, center=(image_center_x, image_center_y), resample=Image.BILINEAR)
-        
+        rotated_panel = panel.rotate(rotation_angle,
+                                     center=(text_center_x, text_center_y),
+                                     resample=Image.BILINEAR)
+    elif rotation_options == "image center":
+        rotated_panel = panel.rotate(rotation_angle,
+                                     center=(image_center_x, image_center_y),
+                                     resample=Image.BILINEAR)
+    else:
+        rotated_panel = panel
+
     return rotated_panel
 
 
