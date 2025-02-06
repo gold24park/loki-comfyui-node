@@ -1,3 +1,4 @@
+from .saturation import ImageSaturation
 from .image_to_base64 import ImageToBase64
 from .base64_to_image import Base64ToImage
 from .luminance import ImageLuminance
@@ -9,7 +10,8 @@ NODE_CLASS_MAPPINGS = {
     "DominantColor": DominantColor,
     "OverlayText": OverlayText,
     "Base64ToImage": Base64ToImage,
-    "ImageToBase64": ImageToBase64
+    "ImageToBase64": ImageToBase64,
+    "ImageSaturation": ImageSaturation
 }
 
 NODE_DISPLAY_NAMES_MAPPINGS = {
@@ -17,7 +19,8 @@ NODE_DISPLAY_NAMES_MAPPINGS = {
     "DominantColor": "Get Dominant Color",
     "OverlayText": "Overlay Text",
     "Base64ToImage": "Base64 to Image",
-    "ImageToBase64": "Image (PNG) to Base64"
+    "ImageToBase64": "Image (PNG) to Base64",
+    "Saturation": "Get Image Saturation"
 }
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
