@@ -61,7 +61,7 @@ class OverlayText:
                      shadow=False,
                      shadow_offset_x=0,
                      shadow_offset_y=0,
-                     shadow_color_hex='#000000',
+                     shadow_color_hex='#00ff00',
                      shadow_opacity=128,
                      shadow_blur=5):
 
