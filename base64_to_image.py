@@ -26,7 +26,6 @@ class Base64ToImage:
     
     def decode_base64(self, base64_string):
         nparr = np.frombuffer(base64.b64decode(base64_string), np.uint8)
-        print(base64_string)
 
         result = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
         channels = cv2.split(result)
