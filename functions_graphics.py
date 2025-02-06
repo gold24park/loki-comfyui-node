@@ -17,6 +17,17 @@ file_list = [f for f in os.listdir(font_dir) if os.path.isfile(os.path.join(font
 def tensor2pil(image):
     return Image.fromarray(np.clip(255. * image.cpu().numpy().squeeze(), 0, 255).astype(np.uint8))
 
+def tensor2pil_rgba(image):
+    image_np = image.cpu().numpy().squeeze()
+    
+    # 값의 범위를 [0, 255]로 조정
+    image_np = np.clip(255. * image_np, 0, 255).astype(np.uint8)
+    
+    # RGBA 형식인지 확인 (채널이 4개인지)
+    if image_np.shape[2] == 4:
+        return Image.fromarray(image_np, mode='RGBA')
+    else:
+        return Image.fromarray(image_np, mode='RGB')
 
 def pil2tensor(image):
     return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0) 

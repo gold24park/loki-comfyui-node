@@ -1,4 +1,4 @@
-from image_to_base64 import ImageToBase64
+from .image_to_base64 import ImageToBase64
 from .base64_to_image import Base64ToImage
 from .luminance import ImageLuminance
 from .dominant_color import DominantColor
