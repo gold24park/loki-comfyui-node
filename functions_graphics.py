@@ -24,6 +24,7 @@ def tensor2pil_rgba(image):
     image_np = np.clip(255. * image_np, 0, 255).astype(np.uint8)
     
     # RGBA 형식인지 확인 (채널이 4개인지)
+    print(f"image_np.shape: {image_np.shape[2]}")
     if image_np.shape[2] == 4:
         return Image.fromarray(image_np, mode='RGBA')
     else:
